@@ -1,1 +1,24 @@
 # Real-Time-Collaborative-Drawing-Canvas
+# 🏗️ Architecture Documentation – Real-Time Collaborative Canvas
+
+This document explains the overall architecture and design decisions behind the real-time collaborative drawing application. The focus of this system is to enable multiple users to draw simultaneously on a shared canvas while maintaining smooth performance, consistent state synchronization, and predictable behavior during complex operations such as undo and redo.
+
+The application follows a client–server real-time architecture. The client is responsible for capturing user input and rendering drawings using the HTML5 Canvas API, while the server acts as the single source of truth for the shared drawing state. WebSockets are used to ensure low-latency, bidirectional communication between clients and the server. Instead of treating the canvas as stored data, the canvas is considered a visual representation of shared drawing operations.
+
+In terms of data flow, whenever a user interacts with the canvas—such as starting a stroke, moving the cursor, or ending a stroke—the client immediately sends these events to the server through WebSockets. The server validates and stores these actions as drawing operations and then broadcasts them to all connected clients. Each client receives these operations and renders them on its own canvas, ensuring that all users see the same drawing in real time.
+
+A key design decision in this project is synchronizing drawing operations rather than pixels. Each drawing action is represented as a structured operation that includes stroke properties like color, width, and a sequence of points. While a user is actively drawing, only small stroke segments are rendered incrementally to provide immediate visual feedback. Once a stroke is completed, it is committed to the shared operation log. In situations such as undo, redo, or when a new user joins, the canvas is fully re-rendered by replaying the operation log from the beginning. This approach guarantees consistency across all users.
+
+The WebSocket communication protocol is intentionally simple and lightweight. Separate events are used for starting a stroke, moving the stroke, ending a stroke, updating cursor positions, and performing undo or redo actions. Cursor updates are kept minimal and are sent frequently but with small payloads to avoid unnecessary network overhead. This allows users to see where others are drawing without affecting drawing performance.
+
+On the server side, the shared state is maintained using two ordered lists: one for completed drawing operations and another for undone operations. Each completed stroke is stored as a single operation. This structure makes it easy to replay the canvas state, synchronize new users, and manage undo and redo functionality in a predictable way.
+
+Undo and redo are implemented as global actions rather than user-specific actions. When an undo is triggered, the most recent drawing operation is removed from the main operation list and moved to the undone list. A redo reverses this process. After each undo or redo, all connected clients re-render their canvas based on the updated operation log. Although this means one user can undo another user’s drawing, it ensures a simple and conflict-free global state, which is a common approach in collaborative editing systems.
+
+Conflict resolution is handled at the operation level rather than the pixel level. The system does not lock regions of the canvas or prevent simultaneous drawing. If multiple users draw over the same area, their operations are applied in the order they are received by the server. As a result, later operations visually appear on top of earlier ones. This keeps the user experience smooth and avoids unnecessary complexity.
+
+Several performance-focused decisions were made to keep the application responsive. Only stroke points are transmitted over the network instead of full canvas data. Incremental rendering is used during active drawing, and full canvas redraws occur only when necessary, such as during undo, redo, or when a new user connects. Cursor rendering is handled on a lightweight overlay canvas to avoid interfering with the main drawing layer.
+
+The system also includes basic safeguards for edge cases. Undo and redo actions are ignored when no valid operations are available. New users automatically receive the complete drawing history upon joining. Unexpected client disconnections do not affect the shared canvas state since the server maintains the authoritative operation log.
+
+In conclusion, this architecture emphasizes real-time responsiveness, shared state consistency, and simplicity. By focusing on operation-based synchronization and avoiding over-engineering, the system closely mirrors how real-world collaborative drawing and editing applications are designed and implemented.
