@@ -1,5 +1,5 @@
 # Real-Time-Collaborative-Drawing-Canvas
-# 🏗️ Architecture Documentation – Real-Time Collaborative Canvas
+# Architecture Documentation – Real-Time Collaborative Canvas
 
 This document explains the overall architecture and design decisions behind the real-time collaborative drawing application. The focus of this system is to enable multiple users to draw simultaneously on a shared canvas while maintaining smooth performance, consistent state synchronization, and predictable behavior during complex operations such as undo and redo.
 
